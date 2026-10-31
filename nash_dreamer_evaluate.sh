@@ -41,10 +41,19 @@ fi
 scale_factor=${SCALE_FACTOR:-$scale_factor}
 #Root folder of the trained networks
 : ${BASE_PATH:="trained_networks"}
+#Root folder to write the extracted metrics into. The full path is
+# metric_store_dir/algo_name/game_name. Override this to keep a one-off
+# evaluation (e.g. with EXTRA_FLAGS="--raw_infoset_eval") from overwriting
+# the metrics currently stored under the default.
+: ${METRIC_STORE_DIR:="metrics/"}
 
 : ${ALGO_DIRS:="NashDreamer=nash_dreamer_rnad RNaD=rnad"}
 
 : ${SEEDS:="(42, 99, 160, 308, 150, 999, 616, 19, 1000, 513)"}
+
+#Additional top-level flags for actor_critic_evaluate.py, e.g. --raw_infoset_eval
+# to reproduce metrics stored before the symlog detection fix. Empty by default.
+: ${EXTRA_FLAGS:=""}
 
 # Debug Output
 echo "------------------------------------------------"
@@ -54,11 +63,13 @@ echo "Seeds:          $SEEDS"
 echo "Metric:         $METRIC"
 echo "Scale factor:   $scale_factor"
 echo "Base path:      $BASE_PATH"
+echo "Metric store dir: $METRIC_STORE_DIR"
 echo "Algo dirs:      $ALGO_DIRS"
+echo "Extra flags:    $EXTRA_FLAGS"
 echo "------------------------------------------------"
 
 #The experiment type is always "loaded" with --restore_step -1,
 # since that ensures checking the whole folder for the metric.
 uv run python -m eval.actor_critic_evaluate --base_path "$BASE_PATH" --game_name "$GAME_NAME" \
---seeds "$SEEDS" --restore_step "-1" --scale_factor "$scale_factor" loaded --metric "$METRIC" \
---algo_dirs "$ALGO_DIRS"
+--seeds "$SEEDS" --restore_step "-1" --scale_factor "$scale_factor" $EXTRA_FLAGS loaded --metric "$METRIC" \
+--metric_store_dir "$METRIC_STORE_DIR" --algo_dirs "$ALGO_DIRS"

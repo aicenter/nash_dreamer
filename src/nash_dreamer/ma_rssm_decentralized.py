@@ -356,7 +356,8 @@ class DecentralizedMARSSM(nnx.Module):
 
   @nnx.jit
   def get_policy(self, obs, legal) -> chex.Array:
-    if not self.obs_loss_bce:
+    # Match training: the actor reads symlog of real infosets.
+    if self.use_real_infoset:
       obs = symlog(obs)
     return MARSSM.call_net(self.actor, obs, legal)
 
@@ -365,7 +366,7 @@ class DecentralizedMARSSM(nnx.Module):
     return self.get_policy_both_no_jit(joint_obs, joint_legal)
 
   def get_policy_both_no_jit(self, joint_obs, joint_legal) -> chex.Array:
-    if not self.obs_loss_bce and self.use_real_infoset:
+    if self.use_real_infoset:
       joint_obs = symlog(joint_obs)
     return self._per_player(self.actor, joint_obs, joint_legal)[0]
 

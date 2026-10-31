@@ -202,6 +202,9 @@ cython_debug/
 .cursorindexingignore
 
 
+# Claude
+.claude/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
@@ -215,9 +218,7 @@ world_model_plots/
 tabular/
 metrics/
 preliminary_metrics/
-cluster*/
 **/*/debug/
-**/*/cluster*/
 #Changes not ready/wanted for commit
 **/*/experimental
 #Default path to store models
@@ -230,5 +231,6 @@ trained_networks/
 **/*/ptt_treeplex/
 ptt_strategies/
 ptt_treeplex
+#Local stuff
 tests/
 texts/

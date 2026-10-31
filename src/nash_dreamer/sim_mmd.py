@@ -115,8 +115,8 @@ class SimMMD():
             f"The stored behaviour policy is an epsilon-uniform mixture, so pi_old is not the policy of the actor "
             f"at collection time and the policy ratio is not 1 at the first inner epoch. "
             f"Supply --sampling_epsilon 0 for strictly on-policy MMD.")
-    if self.buffer_config.replay_ratio >= 1:
-      print(f"Warning! MMD is strictly on-policy, but replay_ratio={self.buffer_config.replay_ratio} >= 1. "
+    if self.buffer_config.replay_ratio > 1:
+      print(f"Warning! MMD is strictly on-policy, but replay_ratio={self.buffer_config.replay_ratio} > 1. "
             f"That mixes replayed off-policy trajectories into each minibatch, and MMD carries no importance "
             f"sampling correction for them. Supply --replay_ratio -1 for strictly on-policy MMD.")
 

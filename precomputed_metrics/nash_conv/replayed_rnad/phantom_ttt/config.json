@@ -41,8 +41,7 @@
     "replay_ratio": 18,
     "return_log_frequency": 10,
     "smoothing_window": 64,
-    "log_returns": true,
-    "number_of_negatives": 5
+    "log_returns": true
   },
   "model_class": "SimRNaD",
   "learner_steps": 30000,
@@ -51,7 +50,6 @@
   "trajectory_length": 18,
   "env_steps_per_grad_step": 1152.0,
   "env_steps_per_grad_step_raw": 1216.0,
-  "env_steps_correction_note": "This run's buffer_config.replay_ratio (18) equals trajectory_length (18); the intended value to make online_trajectories match the other algos' batch_size=64 was trajectory_length+1=19 (batch_size/19=64.0 exactly), so this run consumed real env steps ~5.6% faster than intended per gradient step. env_steps_per_grad_step is corrected here to 1152.0 (=64*trajectory_length, matching rnad/mmd/nash_dreamer_*), treating this run as having consumed the same real data per gradient step as the others for comparison purposes. env_steps_per_grad_step_raw preserves the actual value implied by the run's real (misconfigured) replay_ratio. See replay_buffer.py's ReplayBuffer.__init__ warning for the general check.",
   "wm_warmup_env_step": -1,
   "algo_dir": "replayed_rnad",
   "game_name": "phantom_ttt"

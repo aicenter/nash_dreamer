@@ -6,8 +6,8 @@
     "use_original_infoset": true,
     "report_gradnorms": true,
     "beta_prediction": 1.0,
-    "beta_dynamics": 0.1,
-    "beta_representation": 0.01,
+    "beta_dynamics": 1.0,
+    "beta_representation": 0.1,
     "beta_infoset": 1.0,
     "free_bits_clip_threshold": 0.2,
     "uniform_mix": 0.01,
@@ -116,5 +116,7 @@
     "schedule": "const",
     "warmup": 1000,
     "anneal": 0
-  }
+  },
+  "imagination_start_step": -1,
+  "stage_one_end_step": 0
 }

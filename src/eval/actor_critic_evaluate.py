@@ -398,7 +398,6 @@ def test_nash(args, saved_nash_path: str):
   p1_br_val, p2_br_val = args.scale_factor * p1_br_val, args.scale_factor * p2_br_val
   print(f"P2 best response value against p1: {p2_br_val}")
   print(f"P1 best response value against p2 {p1_br_val}")
-  #compare_policies(model.world_model.game, (model_map, model_behaviorals), (nash_infoset_map, nash_behaviorals))
         
   
 

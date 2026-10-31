@@ -36,9 +36,9 @@
     "target_network_update": 0.001
   },
   "buffer_config": {
-    "buffer_size": 512,
+    "buffer_size": 10000,
     "sampling_epsilon": 0.2,
-    "replay_ratio": 8,
+    "replay_ratio": 10,
     "return_log_frequency": 10,
     "smoothing_window": 64,
     "log_returns": false

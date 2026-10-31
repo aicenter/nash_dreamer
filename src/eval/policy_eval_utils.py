@@ -34,10 +34,7 @@ def actor_input_uses_symlog(model: DreamerMA|SimRNaD|SimMMD|SimPPO) -> bool:
   is not invariant to that.
 
   SimRNaD/SimMMD/SimPPO wrap an ACNetwork, which has no use_real_infoset attribute and is always
-  fed the real infoset, hence the default.
-
-  Deliberately NOT obs_loss_bce, which is what MARSSM.get_policy gates on -- the two conditions
-  coincide on some checkpoints but are different quantities."""
+  fed the real infoset, hence the default."""
   return getattr(model.optimizer.model, "use_real_infoset", True)
 
 
@@ -114,6 +111,9 @@ def extract_model_policy(model: DreamerMA|SimRNaD|SimMMD|SimPPO|None, game: JaxG
     p1_legal, p2_legal = legals[0], legals[1]
     legal = p1_legal[..., None] * p2_legal[..., None, :]
 
+    # Known limitation: infoset_map and infoset_legal are per-player lists, so stacking them raises
+    # ValueError (inhomogeneous shape) when the players have different numbers of infosets at this
+    # depth, e.g. Phantom TTT. Latent infosets can hit it too, since they are grouped by tolerance.
     pi = vectorized_get_policy(jnp.asarray(infoset_map), jnp.asarray(infoset_legal))
     
     
@@ -221,65 +221,6 @@ def policy_expected_value(game: JaxGame|DreamerModelGame, policy: tuple[list, li
   _tree_walk(init_state, False, 0, np.zeros(num_players + 1))
   return expected_return, -expected_return
 
-def compare_policies(game: JaxGame| DreamerModelGame, given_pols: tuple[list, list], ref_pols: tuple[list, list], eps=0.05):
-  """Compares two policies in every state of the game.
-  Usually used to compare learned model policy with some reference policy.
-  Assumes a two player game. Policies are expected to
-  be supplied as a tuple of per depth infoset map and per depth
-  behavior policies."""
-  num_players = game.num_players()
-  num_actions = game.num_distinct_actions()
-  given_map, given_behaviorals = given_pols
-  ref_map, ref_behaviorals = ref_pols
-  is_model_game = isinstance(game, DreamerModelGame)
-
-  def _tree_walk(game_state: GameState|ModelGameState, depth=0):
-    if game.is_chance(game_state):
-      num_chance_outcomes = int(game.state_valid_chance_outcomes(game_state)) if is_model_game else  game.depth_chance_valid_outcomes(depth)
-      next_game_states, next_terminal, next_rewards, next_legals, next_probs = unroll_chance_node(game, game_state, num_chance_outcomes)
-      next_legals = np.asarray(next_legals)
-      next_terminal = np.asarray(next_terminal)
-      for i, next_legal in enumerate(next_legals):
-        if next_terminal[i]:
-          continue
-        next_state = jax.tree_util.tree_map(lambda x: x[i], next_game_states)
-        _tree_walk(next_state, depth= depth + 1)
-      return
-    
-
-    _, p1_infoset, p2_infoset, _ = game.get_info(game_state)
-    infosets = np.stack([p1_infoset, p2_infoset])
-    ref_joint_pi = []
-    for pl, infoset in enumerate(infosets):
-      ref_idx = find_closest_index(ref_map[depth][pl], infoset)
-      # This is because the original game could have been
-      # turn based, in which case one depth will contain only infosets for one player
-      if ref_idx > -1:
-        given_idx = find_closest_index(given_map[depth][pl], infoset)
-        assert given_idx > -1, f"Given policy is missing infoset {infoset} for player {pl}, even though it is in reference policy."
-        ref_pi = ref_behaviorals[depth][pl][ref_idx]
-        ref_joint_pi.append(ref_pi)
-        given_pi = given_behaviorals[depth][pl][given_idx]
-        if np.sum((ref_pi - given_pi) ** 2) >= 1e-5:
-          print(f"Given policy {given_pi} and reference policy {ref_pi} differ by more then {eps} for infoset {infoset}")
-          print(f"Game state: {game_state}")
-    num_pols = len(ref_joint_pi)
-    if num_pols < num_players:
-      for i in range(num_pols, num_players):
-        #This is an invalid action at position 0 played deterministically
-        ref_joint_pi.append(np.eye(num_actions)[0])
-    ref_joint_pi = np.asarray(ref_joint_pi)
-    reachable_mask = ref_joint_pi >= eps
-    actions = np.tile(np.arange(ref_joint_pi.shape[-1]), (num_players,1)).reshape(ref_joint_pi.shape)
-    valid_actions = [actions[i][reachable_mask[i]] for i in range(num_players)]
-    joint_actions = cartesian_product(*valid_actions)
-    for a in joint_actions:
-      next_state, next_terminal, next_rewards, next_legals = game.apply_action(game_state, a)
-      if next_terminal:
-        continue
-      _tree_walk(next_state, depth=depth+1)
-  init_state, init_legals = game.initialize_structures()
-  _tree_walk(init_state)
        
 
 def model_best_response(model: DreamerMA| SimRNaD| SimMMD| SimPPO|None, game: JaxGame | DreamerModelGame, custom_policy: tuple[list, list] = None,

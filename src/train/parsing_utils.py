@@ -19,7 +19,7 @@ def add_reinforce_arguments(parser: ArgumentParser) -> ArgumentParser:
 def add_replay_arguments(parser: ArgumentParser) -> ArgumentParser:
   """Adds all the replay buffer required parameters to parser"""
   parser.add_argument("--buffer_size", type=int, default=64, help="Size of the replay buffer.")
-  parser.add_argument("--replay_ratio", type=int, default=-1, help="The replay ratio, which defines the amount of online steps per minibatch. Respectively, the ratio is replay_ratio / (batch_size * trajectory_len). If -1, only online trajectories are sampled")
+  parser.add_argument("--replay_ratio", type=int, default=-1, help="Total trained steps (online + replayed) per online env step: each minibatch collects (batch_size * trajectory_len) / replay_ratio steps online and replays the rest. <= 1 samples only online trajectories.")
   parser.add_argument("--return_log_frequency", type=int, default=10, help="How often to log trajectory return in the replay buffer in terms of collected minibatches")
   parser.add_argument("--smoothing_window", type=int, default=64, help="How many returns to use for the running average window")
   parser.add_argument("--log_returns", action="store_true", help="A flag whether to log the smoothed returns. They will be stored in the same directory as the model.")

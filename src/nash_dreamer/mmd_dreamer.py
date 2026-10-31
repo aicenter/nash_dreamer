@@ -214,7 +214,7 @@ class MMDDreamer():
       # each of the inner epochs, the stored behaviour policy would always equal the
       # current policy, the ratio would be identically 1, the clipping a no-op and the
       # proximal KL exactly zero with zero gradient, which silently reduces MMD to
-      # REINFORCE with an entropy bonus.
+      # REINFORCE - baseline  with an entropy bonus.
       imagined_timestep = jax.lax.stop_gradient(optimizer.model.imagine_trajectories(trajectory_key, starting_points))
       img_target, img_advantage = fixed_targets(target_optimizer.model, imagined_timestep)
 

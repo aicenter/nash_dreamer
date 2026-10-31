@@ -9,7 +9,7 @@ export PYTHONPATH="$(pwd)/src"
 
 Three protocols are covered here. A fourth — exact Phantom TTT exploitability via the external `eas`
 treeplex solver — lives in [pttt_exploitability/](pttt_exploitability/) and has its own
-[CLAUDE.md](pttt_exploitability/CLAUDE.md); it is not covered on this page.
+[AGENTS.md](pttt_exploitability/AGENTS.md); it is not covered on this page.
 
 ## NashConv and policy quality
 

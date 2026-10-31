@@ -152,9 +152,9 @@ def train_nash_dreamer(args, game: JaxGame):
     # the real trajectories are freshly collected without a uniform mixture. The
     # imagination side of this check lives in MMDDreamer.init, which is where the
     # actor-critic config is in scope.
-    if args.train_real_policy and buffer_config.replay_ratio >= 1:
+    if args.train_real_policy and buffer_config.replay_ratio > 1:
       print(f"Warning! MMD is on-policy and --train_real_policy is set, but replay_ratio="
-            f"{buffer_config.replay_ratio} >= 1. The real policy loss then sees replayed off-policy "
+            f"{buffer_config.replay_ratio} > 1. The real policy loss then sees replayed off-policy "
             f"trajectories, and MMD carries no importance sampling correction for them beyond the "
             f"PPO clipping. Supply --replay_ratio -1 for strictly on-policy MMD.")
     if args.train_real_policy and buffer_config.sampling_epsilon > 0:

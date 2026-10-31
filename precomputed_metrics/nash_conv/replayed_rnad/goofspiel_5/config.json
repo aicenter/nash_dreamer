@@ -19,6 +19,7 @@
       1000
     ],
     "eta": 0.2,
+    "cf_is_clip": 100.0,
     "rho_vtrace": Infinity,
     "c_vtrace": 1.0,
     "gamma_vtrace": 1.0,
@@ -32,12 +33,13 @@
     "legal_threshold": 0.5,
     "bin_range": 20,
     "wm_warm_up_period": 1000,
+    "hard_two_stage": false,
     "target_network_update": 0.001
   },
   "buffer_config": {
-    "buffer_size": 1000,
+    "buffer_size": 10000,
     "sampling_epsilon": 0.2,
-    "replay_ratio": 5,
+    "replay_ratio": 6,
     "return_log_frequency": 10,
     "smoothing_window": 64,
     "log_returns": false

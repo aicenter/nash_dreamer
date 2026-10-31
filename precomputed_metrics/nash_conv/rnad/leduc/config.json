@@ -19,6 +19,7 @@
       1000
     ],
     "eta": 0.2,
+    "cf_is_clip": 100.0,
     "rho_vtrace": Infinity,
     "c_vtrace": 1.0,
     "gamma_vtrace": 1.0,

@@ -3,6 +3,7 @@ import os
 from matplotlib import ticker
 import matplotlib.colors as mcolors
 import numpy as np
+from scipy import stats
 import matplotlib.pyplot as plt
 
 
@@ -21,6 +22,7 @@ parser.add_argument("--labels", type=str, default=None, help="Optional comma-sep
 parser.add_argument("--clamp_checkpoints", type=str, default="", help="Space-separated subset of --algos entries whose steps/values are truncated to the first --clamp_to checkpoints (e.g. a baseline logged at a finer checkpoint cadence than the rest).")
 parser.add_argument("--clamp_to", type=int, default=None, help="Number of checkpoints to truncate --clamp_checkpoints entries to.")
 parser.add_argument("--skip_first_checkpoint", action="store_true", help="Drop each seed's first (step=0, untrained-network) checkpoint before plotting.")
+parser.add_argument("--ci_ribbon", "--sem_ribbon", dest="ci_ribbon", action="store_true", help="Shade the 95%% confidence interval of the mean (Student t over seeds) instead of drawing every seed's own faint curve. Use when the per-seed spread is wide enough to hide the differences between the means.")
 
 
 PRESET_COLORS = {
@@ -251,12 +253,24 @@ def render_plot(results, algo_strs, algo_names, game_str, smoothing_window,
 
         # Plot Mean Line
         color = colors.get(algo_str, 'black')
-        for i in range(matrix.shape[0]):
-            ax.plot(ref_steps, matrix[i],
-                    color=color,
-                    alpha=0.3,       # Make it faint
-                    linestyle='--',   # Dotted/Dashed line
-                    linewidth=1)      # Thinner line
+        if args.ci_ribbon:
+            # A 95% confidence interval of the mean (Student t, seeds as samples). With
+            # many runs the per-seed traces span a far wider range than the gap between
+            # the means, which hides it; the ribbon shows the uncertainty of the mean
+            # instead.
+            if matrix.shape[0] > 1:
+                num_seeds = matrix.shape[0]
+                sem = np.std(matrix, axis=0, ddof=1) / np.sqrt(num_seeds)
+                half_width = stats.t.ppf(0.975, df=num_seeds - 1) * sem
+                ax.fill_between(ref_steps, mean - half_width, mean + half_width, color=color,
+                                alpha=0.2, linewidth=0)
+        else:
+            for i in range(matrix.shape[0]):
+                ax.plot(ref_steps, matrix[i],
+                        color=color,
+                        alpha=0.3,       # Make it faint
+                        linestyle='--',   # Dotted/Dashed line
+                        linewidth=1)      # Thinner line
 
         # 2. Plot Mean Line
         # We plot this LAST so it appears on top of the individual seeds.

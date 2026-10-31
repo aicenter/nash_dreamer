@@ -85,7 +85,7 @@ class Sampler:
         return data
 
     def imagine_trajectory(self, key, ma_rssm: MARSSM) -> SampleData:
-        init_sample_key, init_latent_sample_key, traj_key = jax.random.split(key, 3)
+        init_latent_sample_key, traj_key = jax.random.split(key)
         trajectory_keys = jax.random.split(traj_key, self.ac_trajectory_len)
 
         def get_obs(state):
@@ -108,40 +108,36 @@ class Sampler:
             sel_state = jax.tree.map(lambda x: x[idx], o_states)
             return sel_state, o_term[idx], o_reward[idx], o_legals[idx]
 
+        def resolve_chance(state, terminal, reward, legals, model_obs):
+            """Snap every consecutive chance node from state onto model_obs, accumulating reward."""
+            def cond(loop_state):
+                state, terminal, _, _ = loop_state
+                return jnp.logical_and(self.game.is_chance(state), jnp.logical_not(terminal))
+
+            def body(loop_state):
+                state, _, reward_acc, _ = loop_state
+                next_state, next_terminal, next_reward, next_legals = snap_to_outcome(state, model_obs)
+                return next_state, next_terminal, reward_acc + next_reward, next_legals
+
+            return jax.lax.while_loop(cond, body, (state, terminal, reward, legals))
+
         init_state, init_legals = self.game.initialize_structures()
         init_recurrent = ma_rssm.get_init_recurrent()
 
-        # Posterior grounding: the real root chance node is resolved independently at
-        # random first, and the posterior faithfully encodes whatever real observation
-        # results -- self-consistent, since the posterior directly conditions on the one
-        # real, known observation (no snapping needed).
-        def get_init_chance():
-            outcomes, probs = self.game.get_outcomes_and_probs(init_state)
-            sampled_outcome = jax.random.choice(init_sample_key, outcomes, p=probs)
-            return self.game.apply_action(init_state, sampled_outcome)
-
-        def get_init_no_chance():
-            return init_state, jnp.array(False), jnp.array(0.0, dtype=jnp.float32), init_legals
-
-        start_state, start_terminal, start_reward, start_legals = jax.lax.cond(
-            self.game.is_chance(init_state), get_init_chance, get_init_no_chance)
-        start_obs = get_obs(start_state)
-        init_stoch = ma_rssm.get_encoder_no_jit(init_recurrent, start_obs)
+        # Root latent from the prior, like every other step; the real root chance is snapped onto it.
+        init_stoch = ma_rssm.get_dynamics_no_jit(init_recurrent)
         init_deter = sample_categorical(init_stoch, init_latent_sample_key, self.sample_threshold)
         model_root_obs = ma_rssm.get_decoder_no_jit(init_recurrent, init_deter, return_logits=False)
-        # Seed the latent infoset by "observing" the real root observation, consistent with the
-        # in-scan update (get_next_infoset_all from the previous infoset + obs + action).
+        start_state, start_terminal, start_reward, start_legals = resolve_chance(
+            init_state, jnp.array(False), jnp.array(0.0, dtype=jnp.float32), init_legals, model_root_obs)
+        start_obs = get_obs(start_state)
+        # Seed the latent infoset from the model's own root observation, as the scan does.
         dummy_infoset = jnp.zeros((self.num_players, ma_rssm.latent_infoset_size))
         dummy_action = jnp.zeros((self.num_players, self.num_actions))
         init_latent_infosets = ma_rssm.get_next_infoset_all_no_jit(
-            dummy_infoset, start_obs, dummy_action, use_symlog=False)
+            dummy_infoset, model_root_obs, dummy_action, use_symlog=False)
 
-        # --- Root: evaluate the model's own (init_recurrent, init_deter) against the real
-        # first state, exactly like a scan step's post-transition comparison. When encoder-
-        # compatible, init_deter came from the POSTERIOR of start_obs, so this doubles as an
-        # encoder/decoder round-trip check; when falling back to the prior (see above), it is
-        # a genuine blind prediction, same as every other step. Either way it pools into the
-        # aggregate statistics with the same fields/masking as the rest of the trajectory. ---
+        # --- Root: compare the model's prior prediction with the real first state. ---
         root_normalization = jnp.sum(start_legals, axis=-1, keepdims=True)
         root_valid = jnp.logical_and(jnp.logical_not(start_terminal), jnp.all(root_normalization > 0))
         root_valid_f = root_valid.astype(jnp.float32)
@@ -237,19 +233,8 @@ class Sampler:
             # nodes alternate (e.g. JaxRandomGoofspiel) leaves real_next_state sitting ON an
             # unresolved chance node, whose zeroed-out tensors get compared against the model's
             # genuine decision prediction one step later than they should.
-            def chance_absorb_cond(loop_state):
-                state, terminal, _, _ = loop_state
-                return jnp.logical_and(self.game.is_chance(state), jnp.logical_not(terminal))
-
-            def chance_absorb_body(loop_state):
-                state, _, reward_acc, _ = loop_state
-                next_state, next_terminal, next_reward, next_legals = snap_to_outcome(
-                    state, model_next_obs)
-                return next_state, next_terminal, reward_acc + next_reward, next_legals
-
-            real_next_state, real_next_terminal, real_next_reward, real_next_legals = jax.lax.while_loop(
-                chance_absorb_cond, chance_absorb_body,
-                (real_next_state, real_next_terminal, real_next_reward, real_next_legals))
+            real_next_state, real_next_terminal, real_next_reward, real_next_legals = resolve_chance(
+                real_next_state, real_next_terminal, real_next_reward, real_next_legals, model_next_obs)
             real_next_obs = get_obs(real_next_state)
 
             # --- Reconstruct reward/terminal/legal from the model state. ---
@@ -430,7 +415,7 @@ parser.add_argument("--reward_threshold", type=float, default=0.2,
 parser.add_argument("--sampling_epsilon", type=float, default=0.0,
                     help="Uniform mix into the sampling policy (0 = pure model policy).")
 parser.add_argument("--sample_threshold", type=float, default=0.05,
-                    help="Threshold for the posterior stochastic-state sampling at the root.")
+                    help="Threshold for the prior stochastic-state sampling at the root.")
 parser.add_argument("--ac_trajectory_len", type=int, default=0,
                     help="Imagined trajectory length. <= 0 derives it from game.max_trajectory_length().")
 parser.add_argument("--rng_seed", type=int, default=0, help="PRNG seed for sampling.")

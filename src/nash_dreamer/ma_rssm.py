@@ -340,7 +340,8 @@ class MARSSM(nnx.Module):
   
   @nnx.jit
   def get_policy(self, obs, legal) ->chex.Array:
-    if not self.obs_loss_bce:
+    # Match training: the actor reads symlog of real infosets and raw latent infosets.
+    if self.use_real_infoset:
       obs = symlog(obs)
     return MARSSM.call_net(self.actor, obs, legal)
   
@@ -351,7 +352,7 @@ class MARSSM(nnx.Module):
     return self.get_policy_both_no_jit(joint_obs, joint_legal)
 
   def get_policy_both_no_jit(self, joint_obs, joint_legal) ->chex.Array:
-    if not self.obs_loss_bce and self.use_real_infoset:
+    if self.use_real_infoset:
       joint_obs = symlog(joint_obs)
     vectorized_actor = nnx.vmap(MARSSM.call_net, in_axes=(None, 0, 0), out_axes=0)
     return vectorized_actor(self.actor, joint_obs, joint_legal)[0]

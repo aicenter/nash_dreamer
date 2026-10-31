@@ -109,5 +109,7 @@
     "schedule": "const",
     "warmup": 1000,
     "anneal": 0
-  }
+  },
+  "imagination_start_step": -1,
+  "stage_one_end_step": 0
 }

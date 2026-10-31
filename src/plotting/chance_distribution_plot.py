@@ -4,10 +4,8 @@ chance_l1.pdf, chance_magnitude.pdf, deterministic_l1.pdf, deterministic_magnitu
 
 Per node (chance or deterministic), two metrics are averaged across all nodes of that
 type at a given step:
-  - L1: sum(abs(gt_dist - model_dist)) + error. The '+ error' term accounts for the
-    probability mass evaluate_marginal couldn't assign to any real outcome (gt_dist and
-    model_dist+error both sum to ~1) -- the same correction chance_marginal_eval.py's own
-    summarize() applies to its total-variation figure.
+  - L1: sum(abs(gt_dist - model_dist)) over the real outcomes only. model_dist is the
+    matched mass and may sum to less than 1; the unmatched mass is excluded.
   - magnitude: error (the unmatched probability mass), stored directly per record.
 """
 

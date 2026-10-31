@@ -109,8 +109,7 @@ class TimeStep():
 class BufferConfig:
   buffer_size: int
   sampling_epsilon: float #Uniform policy mixture in the sampling policy
-  replay_ratio: int = -1 #How many steps should be collected from the replay buffer per
-                          # online collected env step
+  replay_ratio: int = -1 #Total trained steps (online + replayed) per online env step; <= 1 means fully online
 
   #For logging returns
   return_log_frequency: int = 10
@@ -358,16 +357,16 @@ class ActorCriticConfig():
 
 @chex.dataclass(frozen=True)
 class OptimizerConfig():
-  lr: float = 3e-4,
-  agc: float = 0.3,
-  eps: float = 1e-20,
-  beta1: float = 0.9,
-  beta2: float = 0.999,
-  momentum: bool = True,
-  nesterov: bool = False,
-  schedule: str = 'const',
-  warmup: int = 1000,
-  anneal: int = 0,
+  lr: float = 3e-4
+  agc: float = 0.3
+  eps: float = 1e-20
+  beta1: float = 0.9
+  beta2: float = 0.999
+  momentum: bool = True
+  nesterov: bool = False
+  schedule: str = 'const'
+  warmup: int = 1000
+  anneal: int = 0
 
 
 

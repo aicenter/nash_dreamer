@@ -27,11 +27,12 @@ def filter_chance_rewards(reward: chex.Array, is_chance: chex.Array, non_chance_
   is independent of how chance and play nodes interleave.
 
   It replaces a `jnp.nonzero(~jnp.roll(is_chance, 1), ...)` mask. `jnp.roll(x, 1)`
-  shifts right, so that mask actually tested whether the *previous* step was a
-  chance node, which credited every step with the reward of the step after it. In
-  games where chance and play strictly alternate (`JaxRandomGoofspiel`) every play
-  was therefore credited with a chance node's reward -- always zero -- and the whole
-  trajectory return was silently destroyed.
+  shifts right, so that mask tested whether the *previous* step was a chance node:
+  it kept each chance step and dropped the step following it, crediting every step
+  with the reward of an earlier one. In games where chance and play strictly
+  alternate (`JaxRandomGoofspiel`) every play was therefore credited with a chance
+  node's reward -- always zero -- and the whole trajectory return was silently
+  destroyed.
 
   Note WMReplayBuffer does NOT use this: its TimeStep stores the reward for
   *arriving* at a step, which stays aligned with obs under the plain non-chance

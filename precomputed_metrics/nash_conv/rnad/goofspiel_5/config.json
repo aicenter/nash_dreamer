@@ -19,6 +19,7 @@
       1000
     ],
     "eta": 0.2,
+    "cf_is_clip": 100.0,
     "rho_vtrace": Infinity,
     "c_vtrace": 1.0,
     "gamma_vtrace": 1.0,
@@ -32,6 +33,7 @@
     "legal_threshold": 0.5,
     "bin_range": 20,
     "wm_warm_up_period": 1000,
+    "hard_two_stage": false,
     "target_network_update": 0.001
   },
   "buffer_config": {

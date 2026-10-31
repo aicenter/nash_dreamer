@@ -69,7 +69,7 @@ Game flags (below) come *before* the `nash_dreamer|rnad|mmd|ppo` positional; alg
 | RPS | `--stochastic` | Use special stochastic RPS instead of standard. At the start a chance node will decide from one out of 3 perturbed variants uniformly. |
 | Goofspiel | `--num_cards N` | Number of cards (default: 3) |
 | Goofspiel | `--random` | Use random-order Goofspiel variant |
-| Goofspiel | `--obs_only` | Use only partial observation instead of infoset representation |
+| Goofspiel | `--observation_only` | Use only partial observation instead of infoset representation |
 | Leduc | `--one_round` | Single-round Leduc (no public card) |
 | Leduc | `--max_raises N` | Max raises per round (one-round only) |
 | Battleship | `--board_height R` | Number of rows on the board of each player |

@@ -1,6 +1,60 @@
 # NashDreamer
 
-NashDreamer is a multi-agent extension of the DreamerV3 world model framework for two-player zero-sum imperfect information games. We train a centralized world model with decentralized execution via latent infosets.
+Official implementation of **NashDreamer: Model-Based Reinforcement Learning for Zero-Sum
+Imperfect-Information Games** (Tomáš Holeček, Viliam Lisý), NeurIPS 2026 —
+[arXiv:2609.01549](https://arxiv.org/abs/2609.01549).
+
+NashDreamer is a multi-agent extension of the DreamerV3 world model framework for two-player zero-sum
+imperfect-information games. We train a centralized world model with decentralized execution via latent
+infosets.
+
+## Table of Contents
+
+- [Method](#method)
+  - [World-model training](#world-model-training)
+  - [Imagination and actor-critic](#imagination-and-actor-critic)
+- [Repository Structure](#repository-structure)
+- [Requirements](#requirements)
+- [Training](#training)
+  - [Using the shell scripts](#using-the-shell-scripts)
+- [Evaluation](#evaluation)
+- [Pre-computed Metrics](#pre-computed-metrics)
+- [Citation](#citation)
+
+## Method
+
+In multi-agent settings, a world model learned separately by each player cannot tell the effect of the
+opponent's strategy apart from the environment dynamics. NashDreamer therefore follows Centralized
+Training with Decentralized Execution (CTDE): a centralized **Multi-Agent Recurrent State-Space Model
+(MARSSM)** learns the dynamics of the game from the joint actions and observations of both players,
+while a separate recurrent **infoset model** per player aggregates only that player's own
+action-observation history into a latent infoset. Each player's actor acts on its own latent infoset
+alone, so the learned policies remain executable in the real game without access to hidden information.
+
+The actor-critic is a game-theoretic policy-gradient method trained on both real and imagined
+trajectories. Two are implemented and interchangeable: **NashDreamer[RNaD]** (Regularized Nash
+Dynamics) and **NashDreamer[MMD]** (Magnetic Mirror Descent). Under an idealized model, NashDreamer
+inherits their convergence guarantees.
+
+### World-model training
+
+<p align="center">
+  <img src="docs/nash_dreamer_world_model.png" alt="NashDreamer world-model training" width="800">
+</p>
+
+Two steps of NashDreamer world-model training on a real trajectory. The centralized RSSM is unrolled on
+the joint action and joint observation, the infoset model separately for each player. All stochastic
+states are posterior. The KL losses are omitted; $a_d$ is the initial dummy action.
+
+### Imagination and actor-critic
+
+<p align="center">
+  <img src="docs/nash_dreamer_imagination.png" alt="NashDreamer imagination" width="660">
+</p>
+
+Two imagined steps. Imagination is grounded in a posterior model state taken from world-model training
+and proceeds with prior stochastic states. The observation decoder is required during imagination,
+since the infoset model consumes observations.
 
 ## Repository Structure
 
@@ -56,8 +110,7 @@ package) — `import train.goofspiel_train`, `import envs.jax_leduc`, etc. all r
 │   │
 │   ├── plotting/              # plot_metrics.py and the world-model plot scripts (src/plotting/README.md)
 │   ├── world_model_experiments/   # World-model quality checks against a trained checkpoint (src/world_model_experiments/README.md)
-│   ├── tests/                 # pytest suite (gitignored, machine-local)
-│   └── debug/, tabular_experiments/  # Scratch
+│   └── tabular_experiments/   # Scratch
 │
 ├── *_train.sh, *_evaluate.sh, ...  # Root-level launcher scripts (see below)
 ├── pyproject.toml, uv.lock         # Dependencies (see Requirements)
@@ -147,3 +200,20 @@ NashDreamer ships three evaluation protocols — see [src/eval/README.md](src/ev
 ## Pre-computed Metrics
 
 The `precomputed_metrics/` directory contains pre-computed evaluation results (NashConv, head-to-head win rates) across all games and seeds reported.
+
+## Citation
+
+If you use NashDreamer in your research, please cite:
+
+```bibtex
+@inproceedings{holecek2026nashdreamer,
+  title         = {{NashDreamer}: Model-Based Reinforcement Learning for Zero-Sum Imperfect-Information Games},
+  author        = {Hole{\v{c}}ek, Tom{\'a}{\v{s}} and Lis{\'y}, Viliam},
+  booktitle     = {Advances in Neural Information Processing Systems},
+  year          = {2026},
+  eprint        = {2609.01549},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2609.01549}
+}
+```
